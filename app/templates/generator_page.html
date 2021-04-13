@@ -1,14 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
     <form class="main_menu" method="post">
-        {% with messages = get_flashed_messages(category_filter=["success"]) %}
-                {% if messages %}
-                    {% for msg in messages %}
-                    <span class="info_label">{{ msg }}</span>
-                    {% endfor -%}
-                <br>
-                {% endif %}
-            {% endwith %}
+
         <div class="input_group">
             <span>{{form.h.label}}</span>
             {{form.h(class_="generator_input")}}

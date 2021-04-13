@@ -1,7 +1,9 @@
-from app import app
-from flask import request, jsonify, send_from_directory, render_template, redirect, url_for, flash
+from app import app, db
+from app.models import Task
+from flask import render_template, redirect, flash, jsonify
 from app.forms import GeneratorForm
 from app import utils
+from threading import Thread
 
 
 @app.route("/")
@@ -138,8 +140,21 @@ def generator_page():
         if gamma <= 0:
             flash('"gamma" must be positive real number', 'gamma')
             return render_template("generator_page.html", title="Generator - Generation", form=form)
-        dataset = utils.generate(h, l, m, n, r_min, r_max, fi_min, fi_max, g_min, g_max, lambd, gamma)
-        print(dataset)
-        utils.save_to_file(dataset, m)
-        flash(f'Saved to "datasets/dataset-{m}.csv', 'success')
+        task = Task(produced=0, target=n, dataset_size=m)
+        db.session.add(task)
+        db.session.commit()
+        thread = Thread(target=utils.generate, args=(h, l, m, n, r_min, r_max, fi_min, fi_max, g_min, g_max, lambd, gamma, task.id))
+        thread.start()
+        return redirect(f'/progress/{task.id}')
     return render_template("generator_page.html", title="Generator - Generation", form=form)
+
+
+@app.route('/progress/<task_id>')
+def progress(task_id):
+    return render_template('progress.html', title="Generator - Progress of generation", task_id=task_id)
+
+
+@app.route('/task_info/<task_id>')
+def get_task_info(task_id):
+    task = Task.query.get(task_id)
+    return jsonify({'produced': task.produced, 'target': task.target, 'dataset_size': task.dataset_size})

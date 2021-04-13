@@ -2,7 +2,9 @@ import math
 import numpy as np
 import csv
 import os
-from app import app
+from app import app, db
+from flask import flash
+from app.models import Task
 
 
 def randomize(rMin, rMax, fiMin, fiMax, gMin, gMax):
@@ -57,7 +59,7 @@ def count(xObj, yObj, h, gObj, m):
     return L_a, R_a, L_b, R_b
 
 
-def generate(h, l, m, n, rMin, rMax, fiMin, fiMax, gMin, gMax, lambd, gamma):
+def generate(h, l, m, n, rMin, rMax, fiMin, fiMax, gMin, gMax, lambd, gamma, task_id):
     M = []
     for i in range(0, n):
         beta_A = [0] * m
@@ -77,7 +79,9 @@ def generate(h, l, m, n, rMin, rMax, fiMin, fiMax, gMin, gMax, lambd, gamma):
         d = math.tanh(lambd * (rObj / h))
         a = 1 / (1 + math.exp(-gamma * (math.pi / 2 - fiObj)))
         M.append({'beta_A': beta_A, 'beta_B': beta_B, 'd': d, 'a': a})
-    return M
+        Task.query.get(task_id).produced += 1
+        db.session.commit()
+    save_to_file(M, m)
 
 
 def save_to_file(dataset, m):
@@ -86,30 +90,3 @@ def save_to_file(dataset, m):
         writer = csv.writer(output, delimiter=';')
         for row in dataset:
             writer.writerow(row['beta_A'] + row['beta_B'] + [row['d'], row['a']])
-
-# h = 25  # половина расстояния между фасеточными глазами
-# l = 6  # радиус описанной вокруг фасеточного глаза окружности
-# m = 100  # количество омматидиев в каждом глазу
-# n = 10  # количество генерируемых образцов
-# rMin = 30  # минимальное расстояние от центра системы фасеточного зрения до центра наблюдаемого круга
-# rMax = 40  # максимальное расстояние от центра системы фасеточного зрения до центра наблюдаемого круга
-# fiMin = math.pi / 4  # минимальный азимут наблюдаемого круга
-# fiMax = 3 * math.pi / 4  # максимальный азимут наблюдаемого круга
-# gMin = 5  # минимальный радиус наблюдаемого круга
-# gMax = 8  # максимальный радиус наблюдаемого круга
-# lambd = 0.5
-# gamma = 2 * math.pi / m
-#
-# arr = generate(h, l, m, n, rMin, rMax, fiMin, fiMax, gMin, gMax, lambd, gamma)
-#
-#
-# def getR(h, lambd, d):
-#     return (h / lambd) * math.atanh(d)
-#
-#
-# def getFi(gamma, a):
-#     return math.pi / 2 + (1 / gamma) * math.log((1 - a) / a)
-#
-#
-# for item in arr:
-#     print("r =", getR(h, lambd, item['d']), "\nfi =", getFi(gamma, item['a']))
