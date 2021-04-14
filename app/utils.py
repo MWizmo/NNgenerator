@@ -66,12 +66,22 @@ def generate(h, l, m, n, rMin, rMax, fiMin, fiMax, gMin, gMax, lambd, gamma, tas
         beta_B = [0] * m
         flag1 = False
         flag2 = False
+        loops = 0
+        is_ok = True
         while not flag1:
             while not flag2:
                 xObj, yObj, gObj, fiObj, rObj = randomize(rMin, rMax, fiMin, fiMax, gMin, gMax)
                 flag2 = valid(xObj, yObj, gObj, h, l)
             L_a, R_a, L_b, R_b = count(xObj, yObj, h, gObj, m)
             flag1 = L_a != R_a
+            loops += 1
+            if loops == 10:
+                is_ok = False
+                break
+        Task.query.get(task_id).produced += 1
+        db.session.commit()
+        if not is_ok:
+            continue
         for j in range(L_a, R_a + 1):
             beta_A[j] = 1
         for j in range(L_b, R_b + 1):
@@ -79,8 +89,6 @@ def generate(h, l, m, n, rMin, rMax, fiMin, fiMax, gMin, gMax, lambd, gamma, tas
         d = math.tanh(lambd * (rObj / h))
         a = 1 / (1 + math.exp(-gamma * (math.pi / 2 - fiObj)))
         M.append({'beta_A': beta_A, 'beta_B': beta_B, 'd': d, 'a': a})
-        Task.query.get(task_id).produced += 1
-        db.session.commit()
     save_to_file(M, m)
 
 
